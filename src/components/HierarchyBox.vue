@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import Checkbox from "./Checkbox.vue";
 
 const ladder = ref(null);
@@ -34,29 +34,32 @@ const defaultStore = [
 
 const saveUpdate = () => {
   const newData = JSON.parse(JSON.stringify(ladder.value));
-  const newChanges = deactivateChildren(newData);
+  const newChanges = deactivateChildrenIfParentInactive(newData);
   localStorage.setItem("ladder", JSON.stringify(newChanges));
   ladder.value = newChanges;
 };
 
-// Recursive function to deactivate children if parent is inactive
-function deactivateChildren(store) {
-  return store.map((item) => {
-    if(item.children) {
-      let childItem = item.children.map(subItem => {
-        if(!item.children.active) {
-          subItem.active = false
-        }
-
-        return subItem
-      })
-
-      if(!item.active) {
-        childItem.active = false
-      }
+// deactivate children if parent is inactive
+function deactivateChildrenIfParentInactive(store) {
+  return store.map(item => {
+    if (item.active === false) {
+      item.children = deactivateAllChildren(item.children);
     }
+    
+    if (item.children && item.children.length > 0) {
+      item.children = deactivateChildrenIfParentInactive(item.children);
+    }
+    return item;
+  });
+}
 
-    return item.children = childItem
+function deactivateAllChildren(children) {
+  return children.map(child => {
+    child.active = false;
+    if (child.children && child.children.length > 0) {
+      child.children = deactivateAllChildren(child.children);
+    }
+    return child;
   });
 }
 
